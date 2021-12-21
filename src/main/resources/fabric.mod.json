@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "cauldronlib",
+  "version": "$version",
+
+  "name": "Cauldronlib",
+  "description": "Makes adding new Cauldrons nice and easy",
+  "authors": [
+    "Shnupbups"
+  ],
+
+  "license": "LGPLv3",
+  "icon": "icon.png",
+
+  "environment": "*",
+  "entrypoints": {
+  },
+
+  "depends": {
+    "fabricloader": ">=0.12",
+    "fabric": "*"
+  }
+}
