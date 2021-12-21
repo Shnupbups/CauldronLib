@@ -7,11 +7,22 @@ import java.util.Set;
 
 import net.minecraft.block.AbstractCauldronBlock;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.LeveledCauldronBlock;
 import net.minecraft.block.cauldron.CauldronBehavior;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsage;
+import net.minecraft.item.Items;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.stat.Stats;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 
 import com.shnupbups.cauldronlib.block.AbstractLeveledCauldronBlock;
 import com.shnupbups.cauldronlib.block.FullCauldronBlock;
@@ -86,59 +97,59 @@ public class CauldronLib {
 	}
 
 	/**
-	 * Creates a new cauldron behavior for filling a cauldron from an item.
+	 * Creates a new cauldron behavior for filling a cauldron from a bucket.
 	 *
 	 * <p>Note that filling in this context means simply putting the smallest fluid level possible into the cauldron,
-	 * so cauldrons with multiple fluid levels will only have a level of 1 from this behavior.
+	 * so cauldron types with multiple fluid levels will only have a level of 1 from this behavior.
 	 *
 	 * <p>If that is not the desired effect, then create a custom behavior.
 	 *
-	 * @param cauldron the filled cauldron that results
-	 * @param itemEmptySound the sound event for emptying the item
+	 * @param cauldron         the filled cauldron that results
+	 * @param bucketEmptySound the sound event for emptying the bucket
 	 */
-	public static CauldronBehavior createFillBehavior(Block cauldron, SoundEvent itemEmptySound) {
-		return (state, world, pos, player, hand, stack) -> CauldronBehavior.fillCauldron(world, pos, player, hand, stack, cauldron.getDefaultState(), itemEmptySound);
+	public static CauldronBehavior createFillFromBucketBehavior(Block cauldron, SoundEvent bucketEmptySound) {
+		return (state, world, pos, player, hand, stack) -> CauldronBehavior.fillCauldron(world, pos, player, hand, stack, cauldron.getDefaultState(), bucketEmptySound);
 	}
 
 	/**
-	 * Registers a new global cauldron behavior for filling a cauldron from an item.
+	 * Registers a new global cauldron behavior for filling a cauldron from a bucket.
 	 *
 	 * <p>Note that filling in this context means simply putting the smallest fluid level possible into the cauldron,
-	 * so cauldrons with multiple fluid levels will only have a level of 1 from this behavior.
+	 * so cauldron types with multiple fluid levels will only have a level of 1 from this behavior.
 	 *
 	 * <p>If that is not the desired effect, then create and register a custom behavior.
 	 *
-	 * @param item   the item to fill from
-	 * @param cauldron the filled cauldron that results
-	 * @param itemEmptySound the sound event for emptying the item
+	 * @param bucket           the bucket to fill the cauldron from
+	 * @param cauldron         the filled cauldron that results
+	 * @param bucketEmptySound the sound event for emptying the bucket
 	 */
-	public static void registerFillBehavior(Item item, Block cauldron, SoundEvent itemEmptySound) {
-		registerGlobalBehavior(item, createFillBehavior(cauldron, itemEmptySound));
+	public static void registerFillFromBucketBehavior(Item bucket, Block cauldron, SoundEvent bucketEmptySound) {
+		registerGlobalBehavior(bucket, createFillFromBucketBehavior(cauldron, bucketEmptySound));
 	}
 
 	/**
 	 * Creates a new cauldron behavior for filling a cauldron from a bucket.
 	 *
 	 * <p>Note that filling in this context means simply putting the smallest fluid level possible into the cauldron,
-	 * so cauldrons with multiple fluid levels will only have a level of 1 from this behavior.
+	 * so cauldron types with multiple fluid levels will only have a level of 1 from this behavior.
 	 *
 	 * <p>If that is not the desired effect, then create a custom behavior.
 	 *
 	 * @param cauldron the filled cauldron that results
 	 */
 	public static CauldronBehavior createFillFromBucketBehavior(Block cauldron) {
-		return createFillBehavior(cauldron, SoundEvents.ITEM_BUCKET_EMPTY);
+		return createFillFromBucketBehavior(cauldron, SoundEvents.ITEM_BUCKET_EMPTY);
 	}
 
 	/**
-	 * Registers a new global cauldron behavior for filling a cauldron from an item.
+	 * Registers a new global cauldron behavior for filling a cauldron from a bucket.
 	 *
 	 * <p>Note that filling in this context means simply putting the smallest fluid level possible into the cauldron,
-	 * so cauldrons with multiple fluid levels will only have a level of 1 from this behavior.
+	 * so cauldron types with multiple fluid levels will only have a level of 1 from this behavior.
 	 *
 	 * <p>If that is not the desired effect, then create and register a custom behavior.
 	 *
-	 * @param bucket   the bucket to fill from
+	 * @param bucket   the bucket to fill the cauldron from
 	 * @param cauldron the filled cauldron that results
 	 */
 	public static void registerFillFromBucketBehavior(Item bucket, Block cauldron) {
@@ -146,21 +157,210 @@ public class CauldronLib {
 	}
 
 	/**
-	 * Creates a new cauldron behavior for emptying a cauldron <b>entirely</b> into an item.
+	 * Creates a new cauldron behavior for filling a cauldron from a bottle.
+	 *
+	 * <p>Note that filling in this context means simply putting the smallest fluid level possible into the cauldron,
+	 * so cauldron types with multiple fluid levels will only have a level of 1 from this behavior.
+	 *
+	 * <p>If that is not the desired effect, then create a custom behavior.
+	 *
+	 * @param cauldron         the filled cauldron that results
+	 * @param bottleEmptySound the sound event for emptying the bottle
+	 */
+	public static CauldronBehavior createFillFromBottleBehavior(Block cauldron, SoundEvent bottleEmptySound) {
+		return (state, world, pos, player, hand, stack) -> {
+			if (!world.isClient) {
+				Item item = stack.getItem();
+				player.setStackInHand(hand, ItemUsage.exchangeStack(stack, player, new ItemStack(Items.GLASS_BOTTLE)));
+				player.incrementStat(Stats.USE_CAULDRON);
+				player.incrementStat(Stats.USED.getOrCreateStat(item));
+				world.setBlockState(pos, cauldron.getDefaultState());
+				world.playSound(null, pos, bottleEmptySound, SoundCategory.BLOCKS, 1.0F, 1.0F);
+				world.emitGameEvent(null, GameEvent.FLUID_PLACE, pos);
+			}
+
+			return ActionResult.success(world.isClient);
+		};
+	}
+
+	/**
+	 * Registers a new global cauldron behavior for filling a cauldron from a bottle.
+	 *
+	 * <p>Note that filling in this context means simply putting the smallest fluid level possible into the cauldron,
+	 * so cauldron types with multiple fluid levels will only have a level of 1 from this behavior.
+	 *
+	 * <p>If that is not the desired effect, then create and register a custom behavior.
+	 *
+	 * @param bottle           the bottle to fill from
+	 * @param cauldron         the filled cauldron that results
+	 * @param bottleEmptySound the sound event for emptying the bottle
+	 */
+	public static void registerFillFromBottleBehavior(Item bottle, Block cauldron, SoundEvent bottleEmptySound) {
+		registerGlobalBehavior(bottle, createFillFromBottleBehavior(cauldron, bottleEmptySound));
+	}
+
+	/**
+	 * Creates a new cauldron behavior for filling a cauldron from a bottle.
+	 *
+	 * <p>Note that filling in this context means simply putting the smallest fluid level possible into the cauldron,
+	 * so cauldron types with multiple fluid levels will only have a level of 1 from this behavior.
+	 *
+	 * <p>If that is not the desired effect, then create a custom behavior.
+	 *
+	 * @param cauldron the filled cauldron that results
+	 */
+	public static CauldronBehavior createFillFromBottleBehavior(Block cauldron) {
+		return createFillFromBottleBehavior(cauldron, SoundEvents.ITEM_BOTTLE_EMPTY);
+	}
+
+	/**
+	 * Registers a new global cauldron behavior for filling a cauldron from a bottle.
+	 *
+	 * <p>Note that filling in this context means simply putting the smallest fluid level possible into the cauldron,
+	 * so cauldron types with multiple fluid levels will only have a level of 1 from this behavior.
+	 *
+	 * <p>If that is not the desired effect, then create and register a custom behavior.
+	 *
+	 * @param bottle   the bottle to fill from
+	 * @param cauldron the filled cauldron that results
+	 */
+	public static void registerFillFromBottleBehavior(Item bottle, Block cauldron) {
+		registerGlobalBehavior(bottle, createFillFromBottleBehavior(cauldron));
+	}
+
+	/**
+	 * Creates a new cauldron behavior for emptying a <b>full</b> cauldron <b>entirely</b> into an item.
 	 *
 	 * @param item the item that results
 	 */
 	public static CauldronBehavior createEmptyBehavior(Item item, SoundEvent itemFillSound) {
-		return (state2, world, pos, player, hand, stack) -> CauldronBehavior.emptyCauldron(state2, world, pos, player, hand, stack, new ItemStack(item), state -> ((AbstractCauldronBlock)state.getBlock()).isFull(state), itemFillSound);
+		return (state, world, pos, player, hand, stack) -> CauldronBehavior.emptyCauldron(state, world, pos, player, hand, stack, new ItemStack(item), state2 -> ((AbstractCauldronBlock) state2.getBlock()).isFull(state2), itemFillSound);
 	}
 
 	/**
-	 * Creates a new cauldron behavior for emptying a cauldron <b>entirely</b> into a bucket.
+	 * Creates a new cauldron behavior for emptying a <b>full</b> cauldron <b>entirely</b> into a bucket.
 	 *
 	 * @param bucket the bucket that results
 	 */
 	public static CauldronBehavior createEmptyIntoBucketBehavior(Item bucket) {
 		return createEmptyBehavior(bucket, SoundEvents.ITEM_BUCKET_FILL);
+	}
+
+	/**
+	 * Sets the fluid level of a cauldron.
+	 *
+	 * @param state    the block state of the cauldron
+	 * @param world    the world the cauldron is in
+	 * @param pos      the position of the cauldron
+	 * @param required whether the cauldron is required to be able to hold the exact amount given
+	 * @param level    the amount to set the fluid level to
+	 * @return whether any change was made
+	 */
+	public static boolean setFluidLevel(BlockState state, World world, BlockPos pos, boolean required, int level) {
+		if (level < 0 && required) return false;
+		if (state.getBlock() instanceof AbstractLeveledCauldronBlock block && block.getFluidLevel(state) != level) {
+			return block.setFluidLevel(state, world, pos, required, level);
+		} else if ((state.getBlock() instanceof FullCauldronBlock || state.isOf(Blocks.LAVA_CAULDRON)) && level <= 0) {
+			return world.setBlockState(pos, Blocks.CAULDRON.getDefaultState());
+		} else if (state.getBlock() instanceof LeveledCauldronBlock) {
+			if (level > 3 && required) {
+				return false;
+			}
+			level = Math.min(level, 3);
+			if (state.get(LeveledCauldronBlock.LEVEL) == level) return false;
+			return world.setBlockState(pos, level <= 0 ? Blocks.CAULDRON.getDefaultState() : state.with(LeveledCauldronBlock.LEVEL, level));
+		}
+		return false;
+	}
+
+	/**
+	 * Decrements the fluid level of a cauldron.
+	 *
+	 * @param state    the block state of the cauldron
+	 * @param world    the world the cauldron is in
+	 * @param pos      the position of the cauldron
+	 * @param required whether the cauldron is required to have the amount of fluid to decrement in the first place
+	 * @param amount   the amount to decrement the fluid level by
+	 * @return whether any change was made
+	 */
+	public static boolean decrementFluidLevel(BlockState state, World world, BlockPos pos, boolean required, int amount) {
+		return setFluidLevel(state, world, pos, required, getFluidLevel(state) - amount);
+	}
+
+	/**
+	 * Increments the fluid level of a cauldron.
+	 *
+	 * @param state    the block state of the cauldron
+	 * @param world    the world the cauldron is in
+	 * @param pos      the position of the cauldron
+	 * @param required whether the cauldron is required to have the space for fluid to increment in the first place
+	 * @param amount   the amount to increment the fluid level by
+	 * @return whether any change was made
+	 */
+	public static boolean incrementFluidLevel(BlockState state, World world, BlockPos pos, boolean required, int amount) {
+		return setFluidLevel(state, world, pos, required, getFluidLevel(state) + amount);
+	}
+
+	/**
+	 * Decrements the fluid level of a cauldron by 1.
+	 *
+	 * @param state    the block state of the cauldron
+	 * @param world    the world the cauldron is in
+	 * @param pos      the position of the cauldron
+	 * @param required whether the cauldron is required to have the amount of fluid to decrement in the first place
+	 * @return whether any change was made
+	 */
+	public static boolean decrementFluidLevel(BlockState state, World world, BlockPos pos, boolean required) {
+		return decrementFluidLevel(state, world, pos, required, 1);
+	}
+
+	/**
+	 * Increments the fluid level of a cauldron by 1.
+	 *
+	 * @param state    the block state of the cauldron
+	 * @param world    the world the cauldron is in
+	 * @param pos      the position of the cauldron
+	 * @param required whether the cauldron is required to have the space for fluid to increment in the first place
+	 * @return whether any change was made
+	 */
+	public static boolean incrementFluidLevel(BlockState state, World world, BlockPos pos, boolean required) {
+		return incrementFluidLevel(state, world, pos, required, 1);
+	}
+
+	/**
+	 * Gets the fluid level of a cauldron, or {@code -1} if not a known cauldron.
+	 *
+	 * @param state the block state of the cauldron
+	 */
+	public static int getFluidLevel(BlockState state) {
+		if (state.getBlock() instanceof AbstractLeveledCauldronBlock block) {
+			return block.getFluidLevel(state);
+		} else if (state.getBlock() instanceof FullCauldronBlock || state.isOf(Blocks.LAVA_CAULDRON)) {
+			return 1;
+		} else if (state.getBlock() instanceof LeveledCauldronBlock) {
+			return state.get(LeveledCauldronBlock.LEVEL);
+		} else if (state.isOf(Blocks.CAULDRON)) {
+			return 0;
+		}
+		return -1;
+	}
+
+	/**
+	 * Gets the maximum fluid level of a cauldron, or {@code -1} if not a known cauldron.
+	 *
+	 * @param state the block state of the cauldron
+	 */
+	public static int getMaxFluidLevel(BlockState state) {
+		if (state.getBlock() instanceof AbstractLeveledCauldronBlock block) {
+			return block.getMaxLevel();
+		} else if (state.getBlock() instanceof FullCauldronBlock || state.isOf(Blocks.LAVA_CAULDRON)) {
+			return 1;
+		} else if (state.getBlock() instanceof LeveledCauldronBlock) {
+			return 3;
+		} else if (state.isOf(Blocks.CAULDRON)) {
+			return 0;
+		}
+		return -1;
 	}
 
 	/**

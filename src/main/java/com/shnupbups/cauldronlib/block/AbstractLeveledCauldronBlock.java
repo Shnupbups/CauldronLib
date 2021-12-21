@@ -36,55 +36,89 @@ public abstract class AbstractLeveledCauldronBlock extends AbstractCauldronBlock
 	public abstract int getMaxLevel();
 
 	private double getLevelAsThirds(BlockState state) {
-		return (double) state.get(getLevelProperty()) / ((double) getMaxLevel() / 3d);
+		return (double) getFluidLevel(state) / ((double) getMaxLevel() / 3d);
+	}
+
+	/**
+	 * Gets the fluid level of this cauldron.
+	 *
+	 * @param state the block state of this cauldron
+	 */
+	public int getFluidLevel(BlockState state) {
+		return state.get(getLevelProperty());
+	}
+
+	/**
+	 * Sets the fluid level of this cauldron.
+	 *
+	 * @param state    the block state of this cauldron
+	 * @param world    the world this cauldron is in
+	 * @param pos      the position of this cauldron
+	 * @param required whether the cauldron is required to be able to hold the exact amount given
+	 * @param level    the amount to set the fluid level to
+	 * @return whether any change was made
+	 */
+	public boolean setFluidLevel(BlockState state, World world, BlockPos pos, boolean required, int level) {
+		if (required && (level < 0 || level > getMaxLevel())) return false;
+		level = Math.min(level, getMaxLevel());
+		if (getFluidLevel(state) == level) return false;
+		return world.setBlockState(pos, level <= 0 ? Blocks.CAULDRON.getDefaultState() : state.with(getLevelProperty(), level));
 	}
 
 	/**
 	 * Decrements the fluid level of this cauldron.
 	 *
-	 * @param state  the block state of this cauldron
-	 * @param world  the world
-	 * @param pos    the position of the cauldron
-	 * @param amount the amount to decrement the fluid level by
+	 * @param state    the block state of this cauldron
+	 * @param world    the world this cauldron is in
+	 * @param pos      the position of this cauldron
+	 * @param required whether the cauldron is required to have the amount of fluid to decrement in the first place
+	 * @param amount   the amount to decrement the fluid level by
+	 * @return whether any change was made
 	 */
-	public void decrementFluidLevel(BlockState state, World world, BlockPos pos, int amount) {
-		int level = Math.min(state.get(getLevelProperty()) - amount, getMaxLevel());
-		world.setBlockState(pos, level <= 0 ? Blocks.CAULDRON.getDefaultState() : state.with(getLevelProperty(), level));
+	public boolean decrementFluidLevel(BlockState state, World world, BlockPos pos, boolean required, int amount) {
+		int level = getFluidLevel(state) - amount;
+		return setFluidLevel(state, world, pos, required, level);
 	}
 
 	/**
 	 * Decrements the fluid level of this cauldron by 1.
 	 *
-	 * @param state the block state of this cauldron
-	 * @param world the world
-	 * @param pos   the position of the cauldron
+	 * @param state    the block state of this cauldron
+	 * @param world    the world this cauldron is in
+	 * @param pos      the position of this cauldron
+	 * @param required whether the cauldron is required to have the amount of fluid to decrement in the first place
+	 * @return whether any change was made
 	 */
-	public void decrementFluidLevel(BlockState state, World world, BlockPos pos) {
-		decrementFluidLevel(state, world, pos, 1);
+	public boolean decrementFluidLevel(BlockState state, World world, BlockPos pos, boolean required) {
+		return decrementFluidLevel(state, world, pos, required, 1);
 	}
 
 	/**
 	 * Increments the fluid level of this cauldron.
 	 *
-	 * @param state  the block state of this cauldron
-	 * @param world  the world
-	 * @param pos    the position of the cauldron
-	 * @param amount the amount to increment the fluid level by
+	 * @param state    the block state of this cauldron
+	 * @param world    the world this cauldron is in
+	 * @param pos      the position of this cauldron
+	 * @param required whether the cauldron is required to have the space for fluid to increment in the first place
+	 * @param amount   the amount to increment the fluid level by
+	 * @return whether any change was made
 	 */
-	public void incrementFluidLevel(BlockState state, World world, BlockPos pos, int amount) {
-		int level = Math.min(state.get(getLevelProperty()) + amount, getMaxLevel());
-		world.setBlockState(pos, level <= 0 ? Blocks.CAULDRON.getDefaultState() : state.with(getLevelProperty(), level));
+	public boolean incrementFluidLevel(BlockState state, World world, BlockPos pos, boolean required, int amount) {
+		int level = getFluidLevel(state) + amount;
+		return setFluidLevel(state, world, pos, required, level);
 	}
 
 	/**
 	 * Increments the fluid level of this cauldron by 1.
 	 *
-	 * @param state the block state of this cauldron
-	 * @param world the world
-	 * @param pos   the position of the cauldron
+	 * @param state    the block state of this cauldron
+	 * @param world    the world this cauldron is in
+	 * @param pos      the position of this cauldron
+	 * @param required whether the cauldron is required to have the space for fluid to increment in the first place
+	 * @return whether any change was made
 	 */
-	public void incrementFluidLevel(BlockState state, World world, BlockPos pos) {
-		incrementFluidLevel(state, world, pos, 1);
+	public boolean incrementFluidLevel(BlockState state, World world, BlockPos pos, boolean required) {
+		return incrementFluidLevel(state, world, pos, required, 1);
 	}
 
 	@Override
