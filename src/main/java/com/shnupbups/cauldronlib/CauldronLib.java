@@ -1,5 +1,6 @@
 package com.shnupbups.cauldronlib;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +33,15 @@ public class CauldronLib {
 	}
 
 	/**
+	 * Registers cauldron behavior maps.
+	 *
+	 * @param behaviorMaps the behavior maps to register
+	 */
+	public static void registerBehaviorMaps(Map<Item, CauldronBehavior>... behaviorMaps) {
+		Arrays.stream(behaviorMaps).forEach(CauldronLib::registerBehaviorMap);
+	}
+
+	/**
 	 * Gets all registered cauldron behavior maps.
 	 */
 	public static Set<Map<Item, CauldronBehavior>> getCauldronBehaviorMaps() {
@@ -41,7 +51,7 @@ public class CauldronLib {
 	/**
 	 * Gets all registered global cauldron behaviors.
 	 */
-	private static Set<CauldronBehaviorMapEntry> getGlobalBehaviors() {
+	public static Set<CauldronBehaviorMapEntry> getGlobalBehaviors() {
 		return GLOBAL_BEHAVIORS;
 	}
 
@@ -62,8 +72,18 @@ public class CauldronLib {
 	 * <p>Global cauldron behaviors are added to every registered cauldron behavior map.
 	 */
 	public static void registerGlobalBehavior(Item item, CauldronBehavior behavior) {
-		getCauldronBehaviorMaps().forEach((map) -> map.put(item, behavior));
-		getGlobalBehaviors().add(new CauldronBehaviorMapEntry(item, behavior));
+		registerGlobalBehavior(new CauldronBehaviorMapEntry(item, behavior));
+	}
+
+	/**
+	 * Registers new global cauldron behaviors.
+	 * <p>Global cauldron behaviors are added to every registered cauldron behavior map.
+	 */
+	public static void registerGlobalBehavior(CauldronBehaviorMapEntry... behaviors) {
+		Arrays.stream(behaviors).forEach((behavior -> {
+			getCauldronBehaviorMaps().forEach((map) -> map.put(behavior.item(), behavior.behavior));
+			getGlobalBehaviors().add(behavior);
+		}));
 	}
 
 	/**
@@ -76,12 +96,12 @@ public class CauldronLib {
 	}
 
 	/**
-	 * Adds a new global cauldron behavior for filling a cauldron from a bucket.
+	 * Registers a new global cauldron behavior for filling a cauldron from a bucket.
 	 *
 	 * @param bucket   the bucket to fill from
 	 * @param cauldron the filled cauldron that results
 	 */
-	public static void addFillCauldronBehavior(Item bucket, Block cauldron) {
+	public static void registerFillCauldronBehavior(Item bucket, Block cauldron) {
 		registerGlobalBehavior(bucket, createFillCauldronBehavior(cauldron));
 	}
 
@@ -95,15 +115,8 @@ public class CauldronLib {
 	}
 
 	/**
-	 * Adds a new cauldron behavior for emptying a cauldron into a bucket to the given behavior map.
-	 *
-	 * @param behaviorMap the behavior map to add the behavior to
-	 * @param bucket      the bucket that results
+	 * A pair of an item and a cauldron behavior
 	 */
-	public static void addEmptyCauldronBehavior(Map<Item, CauldronBehavior> behaviorMap, Item bucket) {
-		behaviorMap.put(Items.BUCKET, createEmptyCauldronBehavior(bucket));
-	}
-
-	private record CauldronBehaviorMapEntry(Item item, CauldronBehavior behavior) {
+	public record CauldronBehaviorMapEntry(Item item, CauldronBehavior behavior) {
 	}
 }
