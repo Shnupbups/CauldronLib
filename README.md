@@ -11,6 +11,6 @@ maven {
 ```
 and this in the `dependencies` block
 ```groovy
-modApi "com.shnupbups:CauldronLib:1.0.1+fabric-mc1.18"
-include "com.shnupbups:CauldronLib:1.0.1+fabric-mc1.18"
+modApi "com.shnupbups:CauldronLib:1.1.0+fabric-mc1.18"
+include "com.shnupbups:CauldronLib:1.1.0+fabric-mc1.18"
 ```
