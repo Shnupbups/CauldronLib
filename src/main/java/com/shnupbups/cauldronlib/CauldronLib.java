@@ -184,22 +184,6 @@ public class CauldronLib {
 	}
 
 	/**
-	 * Registers a new global cauldron behavior for filling a cauldron from a bottle.
-	 *
-	 * <p>Note that filling in this context means simply putting the smallest fluid level possible into the cauldron,
-	 * so cauldron types with multiple fluid levels will only have a level of 1 from this behavior.
-	 *
-	 * <p>If that is not the desired effect, then create and register a custom behavior.
-	 *
-	 * @param bottle           the bottle to fill from
-	 * @param cauldron         the filled cauldron that results
-	 * @param bottleEmptySound the sound event for emptying the bottle
-	 */
-	public static void registerFillFromBottleBehavior(Item bottle, Block cauldron, SoundEvent bottleEmptySound) {
-		registerGlobalBehavior(bottle, createFillFromBottleBehavior(cauldron, bottleEmptySound));
-	}
-
-	/**
 	 * Creates a new cauldron behavior for filling a cauldron from a bottle.
 	 *
 	 * <p>Note that filling in this context means simply putting the smallest fluid level possible into the cauldron,
@@ -211,21 +195,6 @@ public class CauldronLib {
 	 */
 	public static CauldronBehavior createFillFromBottleBehavior(Block cauldron) {
 		return createFillFromBottleBehavior(cauldron, SoundEvents.ITEM_BOTTLE_EMPTY);
-	}
-
-	/**
-	 * Registers a new global cauldron behavior for filling a cauldron from a bottle.
-	 *
-	 * <p>Note that filling in this context means simply putting the smallest fluid level possible into the cauldron,
-	 * so cauldron types with multiple fluid levels will only have a level of 1 from this behavior.
-	 *
-	 * <p>If that is not the desired effect, then create and register a custom behavior.
-	 *
-	 * @param bottle   the bottle to fill from
-	 * @param cauldron the filled cauldron that results
-	 */
-	public static void registerFillFromBottleBehavior(Item bottle, Block cauldron) {
-		registerGlobalBehavior(bottle, createFillFromBottleBehavior(cauldron));
 	}
 
 	/**
@@ -257,20 +226,33 @@ public class CauldronLib {
 	 * @return whether any change was made
 	 */
 	public static boolean setFluidLevel(BlockState state, World world, BlockPos pos, boolean required, int level) {
-		if (level < 0 && required) return false;
-		if (state.getBlock() instanceof AbstractLeveledCauldronBlock block && block.getFluidLevel(state) != level) {
-			return block.setFluidLevel(state, world, pos, required, level);
-		} else if ((state.getBlock() instanceof FullCauldronBlock || state.isOf(Blocks.LAVA_CAULDRON)) && level <= 0) {
+		int maxLevel = getMaxFluidLevel(state);
+		int actualLevel = Math.max(0, Math.min(level, maxLevel));
+
+		if (maxLevel == -1 || (level != actualLevel && required) || getFluidLevel(state) == actualLevel) return false;
+		
+		if (state.getBlock() instanceof AbstractLeveledCauldronBlock block) {
+			return block.setFluidLevel(state, world, pos, required, actualLevel);
+		} else if ((state.getBlock() instanceof FullCauldronBlock || state.isOf(Blocks.LAVA_CAULDRON)) && actualLevel == 0) {
 			return world.setBlockState(pos, Blocks.CAULDRON.getDefaultState());
 		} else if (state.getBlock() instanceof LeveledCauldronBlock) {
-			if (level > 3 && required) {
-				return false;
-			}
-			level = Math.min(level, 3);
-			if (state.get(LeveledCauldronBlock.LEVEL) == level) return false;
-			return world.setBlockState(pos, level <= 0 ? Blocks.CAULDRON.getDefaultState() : state.with(LeveledCauldronBlock.LEVEL, level));
+			return world.setBlockState(pos, actualLevel == 0 ? Blocks.CAULDRON.getDefaultState() : state.with(LeveledCauldronBlock.LEVEL, actualLevel));
 		}
+
 		return false;
+	}
+
+	/**
+	 * Sets the fluid level of a cauldron.
+	 *
+	 * @param state the block state of the cauldron
+	 * @param world the world the cauldron is in
+	 * @param pos   the position of the cauldron
+	 * @param level the amount to set the fluid level to
+	 * @return whether any change was made
+	 */
+	public static boolean setFluidLevel(BlockState state, World world, BlockPos pos, int level) {
+		return setFluidLevel(state, world, pos, true, level);
 	}
 
 	/**
@@ -328,6 +310,56 @@ public class CauldronLib {
 	}
 
 	/**
+	 * Decrements the fluid level of a cauldron.
+	 *
+	 * @param state  the block state of the cauldron
+	 * @param world  the world the cauldron is in
+	 * @param pos    the position of the cauldron
+	 * @param amount the amount to decrement the fluid level by
+	 * @return whether any change was made
+	 */
+	public static boolean decrementFluidLevel(BlockState state, World world, BlockPos pos, int amount) {
+		return decrementFluidLevel(state, world, pos, true, amount);
+	}
+
+	/**
+	 * Increments the fluid level of a cauldron.
+	 *
+	 * @param state  the block state of the cauldron
+	 * @param world  the world the cauldron is in
+	 * @param pos    the position of the cauldron
+	 * @param amount the amount to increment the fluid level by
+	 * @return whether any change was made
+	 */
+	public static boolean incrementFluidLevel(BlockState state, World world, BlockPos pos, int amount) {
+		return incrementFluidLevel(state, world, pos, true, amount);
+	}
+
+	/**
+	 * Decrements the fluid level of a cauldron by 1.
+	 *
+	 * @param state the block state of the cauldron
+	 * @param world the world the cauldron is in
+	 * @param pos   the position of the cauldron
+	 * @return whether any change was made
+	 */
+	public static boolean decrementFluidLevel(BlockState state, World world, BlockPos pos) {
+		return decrementFluidLevel(state, world, pos, true, 1);
+	}
+
+	/**
+	 * Increments the fluid level of a cauldron by 1.
+	 *
+	 * @param state the block state of the cauldron
+	 * @param world the world the cauldron is in
+	 * @param pos   the position of the cauldron
+	 * @return whether any change was made
+	 */
+	public static boolean incrementFluidLevel(BlockState state, World world, BlockPos pos) {
+		return incrementFluidLevel(state, world, pos, true, 1);
+	}
+
+	/**
 	 * Gets the fluid level of a cauldron, or {@code -1} if not a known cauldron.
 	 *
 	 * @param state the block state of the cauldron
@@ -364,7 +396,7 @@ public class CauldronLib {
 	}
 
 	/**
-	 * A pair of an item and a cauldron behavior
+	 * A pair of an item and a cauldron behavior.
 	 */
 	public record CauldronBehaviorMapEntry(Item item, CauldronBehavior behavior) {
 	}

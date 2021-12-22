@@ -59,10 +59,24 @@ public abstract class AbstractLeveledCauldronBlock extends AbstractCauldronBlock
 	 * @return whether any change was made
 	 */
 	public boolean setFluidLevel(BlockState state, World world, BlockPos pos, boolean required, int level) {
-		if (required && (level < 0 || level > getMaxLevel())) return false;
-		level = Math.min(level, getMaxLevel());
-		if (getFluidLevel(state) == level) return false;
-		return world.setBlockState(pos, level <= 0 ? Blocks.CAULDRON.getDefaultState() : state.with(getLevelProperty(), level));
+		int actualLevel = Math.max(0, Math.min(level, getMaxLevel()));
+
+		if ((level != actualLevel && required) || getFluidLevel(state) == actualLevel) return false;
+
+		return world.setBlockState(pos, actualLevel == 0 ? Blocks.CAULDRON.getDefaultState() : state.with(getLevelProperty(), actualLevel));
+	}
+
+	/**
+	 * Sets the fluid level of this cauldron.
+	 *
+	 * @param state the block state of this cauldron
+	 * @param world the world this cauldron is in
+	 * @param pos   the position of this cauldron
+	 * @param level the amount to set the fluid level to
+	 * @return whether any change was made
+	 */
+	public boolean setFluidLevel(BlockState state, World world, BlockPos pos, int level) {
+		return setFluidLevel(state, world, pos, true, level);
 	}
 
 	/**
@@ -81,19 +95,6 @@ public abstract class AbstractLeveledCauldronBlock extends AbstractCauldronBlock
 	}
 
 	/**
-	 * Decrements the fluid level of this cauldron by 1.
-	 *
-	 * @param state    the block state of this cauldron
-	 * @param world    the world this cauldron is in
-	 * @param pos      the position of this cauldron
-	 * @param required whether the cauldron is required to have the amount of fluid to decrement in the first place
-	 * @return whether any change was made
-	 */
-	public boolean decrementFluidLevel(BlockState state, World world, BlockPos pos, boolean required) {
-		return decrementFluidLevel(state, world, pos, required, 1);
-	}
-
-	/**
 	 * Increments the fluid level of this cauldron.
 	 *
 	 * @param state    the block state of this cauldron
@@ -109,6 +110,19 @@ public abstract class AbstractLeveledCauldronBlock extends AbstractCauldronBlock
 	}
 
 	/**
+	 * Decrements the fluid level of this cauldron by 1.
+	 *
+	 * @param state    the block state of this cauldron
+	 * @param world    the world this cauldron is in
+	 * @param pos      the position of this cauldron
+	 * @param required whether the cauldron is required to have the amount of fluid to decrement in the first place
+	 * @return whether any change was made
+	 */
+	public boolean decrementFluidLevel(BlockState state, World world, BlockPos pos, boolean required) {
+		return decrementFluidLevel(state, world, pos, required, 1);
+	}
+
+	/**
 	 * Increments the fluid level of this cauldron by 1.
 	 *
 	 * @param state    the block state of this cauldron
@@ -119,6 +133,56 @@ public abstract class AbstractLeveledCauldronBlock extends AbstractCauldronBlock
 	 */
 	public boolean incrementFluidLevel(BlockState state, World world, BlockPos pos, boolean required) {
 		return incrementFluidLevel(state, world, pos, required, 1);
+	}
+
+	/**
+	 * Decrements the fluid level of this cauldron by 1.
+	 *
+	 * @param state the block state of this cauldron
+	 * @param world the world this cauldron is in
+	 * @param pos   the position of this cauldron
+	 * @return whether any change was made
+	 */
+	public boolean decrementFluidLevel(BlockState state, World world, BlockPos pos) {
+		return decrementFluidLevel(state, world, pos, true, 1);
+	}
+
+	/**
+	 * Increments the fluid level of this cauldron by 1.
+	 *
+	 * @param state the block state of this cauldron
+	 * @param world the world this cauldron is in
+	 * @param pos   the position of this cauldron
+	 * @return whether any change was made
+	 */
+	public boolean incrementFluidLevel(BlockState state, World world, BlockPos pos) {
+		return incrementFluidLevel(state, world, pos, true, 1);
+	}
+
+	/**
+	 * Decrements the fluid level of this cauldron.
+	 *
+	 * @param state  the block state of this cauldron
+	 * @param world  the world this cauldron is in
+	 * @param pos    the position of this cauldron
+	 * @param amount the amount to decrement the fluid level by
+	 * @return whether any change was made
+	 */
+	public boolean decrementFluidLevel(BlockState state, World world, BlockPos pos, int amount) {
+		return decrementFluidLevel(state, world, pos, true, amount);
+	}
+
+	/**
+	 * Increments the fluid level of this cauldron.
+	 *
+	 * @param state  the block state of this cauldron
+	 * @param world  the world this cauldron is in
+	 * @param pos    the position of this cauldron
+	 * @param amount the amount to increment the fluid level by
+	 * @return whether any change was made
+	 */
+	public boolean incrementFluidLevel(BlockState state, World world, BlockPos pos, int amount) {
+		return incrementFluidLevel(state, world, pos, true, amount);
 	}
 
 	@Override
