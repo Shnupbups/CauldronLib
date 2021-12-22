@@ -230,7 +230,7 @@ public class CauldronLib {
 		int actualLevel = Math.max(0, Math.min(level, maxLevel));
 
 		if (maxLevel == -1 || (level != actualLevel && required) || getFluidLevel(state) == actualLevel) return false;
-		
+
 		if (state.getBlock() instanceof AbstractLeveledCauldronBlock block) {
 			return block.setFluidLevel(state, world, pos, required, actualLevel);
 		} else if ((state.getBlock() instanceof FullCauldronBlock || state.isOf(Blocks.LAVA_CAULDRON)) && actualLevel == 0) {
@@ -393,6 +393,68 @@ public class CauldronLib {
 			return 0;
 		}
 		return -1;
+	}
+
+	/**
+	 * Whether a cauldron is full.
+	 *
+	 * @param state the block state of the cauldron
+	 */
+	public static boolean isFull(BlockState state) {
+		return getFluidLevel(state) >= getMaxFluidLevel(state);
+	}
+
+	/**
+	 * Whether it's possible to set a cauldron's fluid level.
+	 *
+	 * @param state the block state of the cauldron
+	 * @param level the amount to set the fluid level to
+	 */
+	public static boolean canSetFluidLevel(BlockState state, int level) {
+		int maxLevel = getMaxFluidLevel(state);
+		int actualLevel = Math.max(0, Math.min(level, maxLevel));
+
+		return maxLevel != -1 && level == actualLevel && getFluidLevel(state) != actualLevel;
+	}
+
+	/**
+	 * Whether it's possible to increment a cauldron's fluid level.
+	 *
+	 * @param state  the block state of the cauldron
+	 * @param amount the amount to increment the fluid level by
+	 */
+	public static boolean canIncrementFluidLevel(BlockState state, int amount) {
+		return canSetFluidLevel(state, getFluidLevel(state) + amount);
+	}
+
+	/**
+	 * Whether it's possible to decrement a cauldron's fluid level.
+	 *
+	 * @param state  the block state of the cauldron
+	 * @param amount the amount to decrement the fluid level by
+	 */
+	public static boolean canDecrementFluidLevel(BlockState state, int amount) {
+		return canSetFluidLevel(state, getFluidLevel(state) - amount);
+	}
+
+	/**
+	 * Whether it's possible to increment a cauldron's fluid level by 1.
+	 *
+	 * @param state the block state of the cauldron
+	 */
+	public static boolean canIncrementFluidLevel(BlockState state) {
+		return canIncrementFluidLevel(state, 1);
+	}
+
+	/**
+	 * Whether it's possible to decrement a cauldron's fluid level by 1.
+	 *
+	 * <p>Should always be true, except for empty cauldrons or things that aren't cauldrons.
+	 *
+	 * @param state the block state of the cauldron
+	 */
+	public static boolean canDecrementFluidLevel(BlockState state) {
+		return canDecrementFluidLevel(state, 1);
 	}
 
 	/**
